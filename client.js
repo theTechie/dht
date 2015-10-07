@@ -10,6 +10,7 @@ var inquirer = require('inquirer'),
     Server = require('socket.io'),
     HashTable = require('hashtable'),
     hashtable = new HashTable(),
+    ConsistentHashing = require('consistent-hashing'),
     constants = require('./constants'),
     ioServer = new Server();
 
@@ -22,8 +23,11 @@ var argv = require('optimist')
     .describe('p', 'Port to run peer on')
     .argv;
 
+var peers = validateConfig(argv.config),
+    peersList = new ConsistentHashing(peers);
+
 // NOTE: Validate config file
-if (!validateConfig(argv.config)) {
+if (!peers) {
     console.log("Please enter valid IP address and port separated by a space in config file ! : [IP_ADDRESS] [PORT] => ", argv.config);
     process.exit();
 }
@@ -65,7 +69,8 @@ function requestKey(operation) {
         if (operation === constants.PUT) {
             requestValue(operation, response.key);
         } else {
-            performOperation(operation, response.key);
+            //performOperation(operation, response.key);
+            delegateOperationToPeer(response.key, operation, { key: response.key, value: response.value });
             listOperations();
         }
     });
@@ -88,7 +93,8 @@ function requestValue(operation, key) {
     }];
 
     inquirer.prompt(requestForValue, function( response ) {
-        performOperation(operation, key, response.value);
+        //performOperation(operation, key, response.value);
+        delegateOperationToPeer(key, operation, { key: key, value: response.value });
         listOperations();
     });
 }
@@ -130,24 +136,27 @@ function deleteKey(key) {
     return hashtable.remove(key);
 }
 
-function hash(key) {
-    // TODO: perform hashing and return the peerID to connect to
+// NOTE: Find target peer using ConsistentHashing
+function findTargetPeer(key) {
+    return peersList.getNode(key);
 }
 
-function delegateOperationToPeer(peerID, operation, operation_params) {
+function delegateOperationToPeer(key, operation, operation_params) {
     var socket_address;
+    var peerID = findTargetPeer(key);
 
     if (validateAddress(peerID)) {
-        socket_address = "http://" + peerID;
+        socket_address = "http://" + peerID.split(" ").join(":");
     } else {
         logClientMessage("ERROR : SOMETHING TERRIBLY WENT WRONG WHILE CONNECTING TO PEER !");
         process.exit();
     }
 
-    var socket = io(socket_address);
+    console.log("Connecting to peer : ", socket_address);
+    var socket = io(socket_address, { 'forceNew': true });
 
     socket.on('op_status', function (response) {
-       logClientMessage(" : " + operation + " : Status => " + response.status);
+       logClientMessage(operation + " : Status => " + response.status);
     });
 
     socket.on('connect', function () {
@@ -174,7 +183,7 @@ function validateConfig(fileName) {
         return !validateAddress(peer);
     });
 
-    return invalidPeers.length > 0 ? false : true;
+    return invalidPeers.length > 0 ? false : peers;
 }
 
 // NOTE: check if address is valid (ip:port)
@@ -204,3 +213,4 @@ function logServerMessage(message) {
 }
 
 ioServer.listen(argv.port);
+console.log("\n Server running at : " + ip.address() + ":" + argv.port);
