@@ -170,14 +170,11 @@ ioServer.on('connect', function (socket) {
 function validateConfig(fileName) {
     var peers = fs.readFileSync(fileName).toString().split('\n');
 
-    peers.forEach(function (peer, i) {
-        console.log(peer);
-        if (!validateAddress(peer)) {
-            return false;
-        }
+    var invalidPeers = peers.filter(function (peer, i) {
+        return !validateAddress(peer);
     });
 
-    return true;
+    return invalidPeers.length > 0 ? false : true;
 }
 
 // NOTE: check if address is valid (ip:port)
