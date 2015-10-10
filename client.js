@@ -69,9 +69,8 @@ function requestKey(operation) {
         if (operation === constants.PUT) {
             requestValue(operation, response.key);
         } else {
-            //performOperation(operation, response.key);
             delegateOperationToPeer(response.key, operation, { key: response.key, value: response.value });
-            listOperations();
+            //listOperations();
         }
     });
 }
@@ -93,9 +92,8 @@ function requestValue(operation, key) {
     }];
 
     inquirer.prompt(requestForValue, function( response ) {
-        //performOperation(operation, key, response.value);
         delegateOperationToPeer(key, operation, { key: key, value: response.value });
-        listOperations();
+        //listOperations();
     });
 }
 
@@ -117,7 +115,7 @@ function performOperation(operation, key, value) {
             logServerMessage("ERROR: SOMETHING WENT TERRIBLY WRONG !");
     }
 
-    logServerMessage(" : " + operation + " : Status => " + status);
+    logServerMessage(operation + " : Status => " + status);
 
     return status;
 }
@@ -157,6 +155,7 @@ function delegateOperationToPeer(key, operation, operation_params) {
 
     socket.on('op_status', function (response) {
        logClientMessage(operation + " : Status => " + response.status);
+       listOperations();
     });
 
     socket.on('connect', function () {
