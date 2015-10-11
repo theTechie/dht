@@ -69,7 +69,7 @@ function doTest(operation) {
 var iteration = 0;
 var totalLatency = 0;
 var keyRange = argv.keyRange;
-var maxIteration = 100;
+var maxIteration = 1000;
 
 function testPut() {
     if (iteration < maxIteration) {
@@ -155,7 +155,6 @@ function deleteKey(key) {
 
 // NOTE: Find target peer using ConsistentHashing
 function findTargetPeer(key) {
-    console.log("Key : " + key + ", TypeOf : " + typeof key);
     return peersList.getNode(key);
 }
 
@@ -170,11 +169,16 @@ function delegateOperationToPeer(key, operation, operation_params) {
         process.exit();
     }
 
+    // TODO : Pick the socket from the connected list and re-use it to send further messages
     console.log("Connecting to peer : ", socket_address);
     var socket = io(socket_address, { 'forceNew': true });
+    //var socket = io(socket_address, { 'reconnection': true });
+
+    //console.log(socket.io.connected.map(function (a, i) { return a.id; }));
+    //console.log(socket.io);
 
     socket.on('op_status', function (response) {
-       logClientMessage(operation + " : Status => " + response.status);
+        logClientMessage(operation + " : Status => " + response.status);
 
         var latency = Date.now() - response.timestamp;
         console.log(operation + " Latency : ", latency);
@@ -192,6 +196,8 @@ function delegateOperationToPeer(key, operation, operation_params) {
 // NOTE: DHT Peer Server
 ioServer.on('connect', function (socket) {
     logServerMessage("Connected with Peer Client : " + socket.handshake.address);
+
+    console.log("Open Client Connection : ", socket.server.engine.clientsCount);
 
     socket.on('operation', function (response) {
         var status = performOperation(response.operation, response.params.key, response.params.value);

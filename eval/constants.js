@@ -1,7 +1,7 @@
 var keyMirror = require('keymirror');
 module.exports = keyMirror({
-    PUT: null,
-    GET: null,
-    DELETE: null,
+    TEST_PUT: null,
+    TEST_GET: null,
+    TEST_DELETE: null,
     NOOP: null
 });

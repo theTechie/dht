@@ -40,7 +40,7 @@ function listOperations() {
         type: "list",
         name: "operation",
         message: "Please select the operation you would like to perform : ",
-        choices: ['PUT', 'GET', 'DELETE']
+        choices: [constants.PUT, constants.GET, constants.DELETE]
     }];
 
     inquirer.prompt(requestForOperation, function( response ) {
