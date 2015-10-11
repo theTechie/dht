@@ -69,7 +69,7 @@ function doTest(operation) {
 var iteration = 0;
 var totalLatency = 0;
 var keyRange = argv.keyRange;
-var maxIteration = 1000;
+var maxIteration = 100000;
 
 function testPut() {
     if (iteration < maxIteration) {
@@ -106,7 +106,7 @@ function testDelete() {
         delegateOperationToPeer(keyRange.toString(), constants.TEST_DELETE, { key: keyRange.toString(), value: keyRange.toString() + '_value' });
         keyRange++; iteration++;
     } else {
-        console.log("Put Latency / Lookup (ms) : ", totalLatency / maxIteration);
+        console.log("Total Delete Latency / Lookup (ms) : ", totalLatency / maxIteration);
 
         iteration = 0;
         totalLatency = 0;
@@ -158,6 +158,8 @@ function findTargetPeer(key) {
     return peersList.getNode(key);
 }
 
+var sockets = new HashTable();
+
 function delegateOperationToPeer(key, operation, operation_params) {
     var socket_address;
     var peerID = findTargetPeer(key);
@@ -169,39 +171,44 @@ function delegateOperationToPeer(key, operation, operation_params) {
         process.exit();
     }
 
-    // TODO : Pick the socket from the connected list and re-use it to send further messages
-    console.log("Connecting to peer : ", socket_address);
-    var socket = io(socket_address, { 'forceNew': true });
-    //var socket = io(socket_address, { 'reconnection': true });
+    var socket;
 
-    //console.log(socket.io.connected.map(function (a, i) { return a.id; }));
-    //console.log(socket.io);
-
-    socket.on('op_status', function (response) {
-        logClientMessage(operation + " : Status => " + response.status);
-
-        var latency = Date.now() - response.timestamp;
-        console.log(operation + " Latency : ", latency);
-        totalLatency += latency;
-
-        doTest(operation);
-    });
-
-    socket.on('connect', function () {
-        logClientMessage("Connected to Peer Server !");
+    if (sockets.has(peerID)) {
+        socket = sockets.get(peerID);
         socket.emit('operation', { operation: operation, params: operation_params, timestamp: Date.now() });
-    });
+    } else {
+        socket = io(socket_address);
+
+        console.log("Connecting to peer : ", socket_address);
+
+        socket.on('op_status', function (response) {
+            logClientMessage(response.operation + " : Status => " + response.status);
+
+            var latency = Date.now() - response.timestamp;
+            console.log(response.operation + " Latency : ", latency);
+            totalLatency += latency;
+
+            doTest(response.operation);
+        });
+
+        socket.on('connect', function () {
+            logClientMessage("Connected to Peer Server !");
+            socket.emit('operation', { operation: operation, params: operation_params, timestamp: Date.now() });
+        });
+
+        sockets.put(peerID, socket);
+    }
 }
 
 // NOTE: DHT Peer Server
 ioServer.on('connect', function (socket) {
     logServerMessage("Connected with Peer Client : " + socket.handshake.address);
 
-    console.log("Open Client Connection : ", socket.server.engine.clientsCount);
+    console.log("Open Client Connections : ", socket.server.engine.clientsCount);
 
     socket.on('operation', function (response) {
         var status = performOperation(response.operation, response.params.key, response.params.value);
-        socket.emit('op_status', { status:  status, timestamp: response.timestamp });
+        socket.emit('op_status', { operation: response.operation, status:  status, timestamp: response.timestamp });
     });
 });
 
