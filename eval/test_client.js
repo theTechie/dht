@@ -14,6 +14,8 @@ var inquirer = require('inquirer'),
     constants = require('./constants'),
     ioServer = new Server();
 
+var log = false;
+
 var argv = require('optimist')
     .usage('Usage: $0 -c [CONFIG] -p [PORT] -k [KEY_RANGE]')
     .demand(['c', 'p'])
@@ -185,7 +187,7 @@ function delegateOperationToPeer(key, operation, operation_params) {
             logClientMessage(response.operation + " : Status => " + response.status);
 
             var latency = Date.now() - response.timestamp;
-            console.log(response.operation + " Latency : ", latency);
+            //console.log(response.operation + " Latency : ", latency);
             totalLatency += latency;
 
             doTest(response.operation);
@@ -241,12 +243,14 @@ function validateAddress(entry) {
 
 // NOTE: log client message
 function logClientMessage(message) {
-    console.log("[Client] : ", message);
+    if (log)
+        console.log("[Client] : ", message);
 }
 
 // NOTE: log server message
 function logServerMessage(message) {
-    console.log("[Server] : ", message);
+    if (log)
+        console.log("[Server] : ", message);
 }
 
 ioServer.listen(argv.port);
