@@ -14,7 +14,7 @@ var inquirer = require('inquirer'),
     constants = require('./constants'),
     ioServer = new Server();
 
-var log = false;
+var log = true;
 
 var argv = require('optimist')
     .usage('Usage: $0 -c [CONFIG] -p [PORT] -k [KEY_RANGE]')
@@ -79,7 +79,7 @@ function testPut() {
         keyRange++; iteration++;
     } else {
         console.log("Total Put Latency / Lookup (ms) : ", totalLatency / maxIteration);
-
+        console.log("Size : ", hashtable.size());
         iteration = 0;
         totalLatency = 0;
         keyRange = argv.keyRange;
@@ -94,6 +94,7 @@ function testGet() {
         keyRange++; iteration++;
     } else {
         console.log("Total Get Latency / Lookup (ms) : ", totalLatency / maxIteration);
+        console.log("Size : ", hashtable.size());
 
         iteration = 0;
         totalLatency = 0;
@@ -109,6 +110,7 @@ function testDelete() {
         keyRange++; iteration++;
     } else {
         console.log("Total Delete Latency / Lookup (ms) : ", totalLatency / maxIteration);
+        console.log("Size : ", hashtable.size());
 
         iteration = 0;
         totalLatency = 0;

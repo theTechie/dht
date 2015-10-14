@@ -139,6 +139,8 @@ function findTargetPeer(key) {
     return peersList.getNode(key);
 }
 
+var sockets = new HashTable();
+
 function delegateOperationToPeer(key, operation, operation_params) {
     var socket_address;
     var peerID = findTargetPeer(key);
@@ -150,18 +152,28 @@ function delegateOperationToPeer(key, operation, operation_params) {
         process.exit();
     }
 
-    console.log("Connecting to peer : ", socket_address);
-    var socket = io(socket_address, { 'forceNew': true });
+    var socket;
 
-    socket.on('op_status', function (response) {
-       logClientMessage(operation + " : Status => " + response.status);
-       listOperations();
-    });
-
-    socket.on('connect', function () {
-        logClientMessage("Connected to Peer Server !");
+    // NOTE: Check if the socket is already established and re-use if yes, else create a new connection
+    if (sockets.has(peerID)) {
+        socket = sockets.get(peerID);
         socket.emit('operation', { operation: operation, params: operation_params });
-    });
+    } else {
+        socket = io(socket_address);
+        console.log("Connecting to peer : ", socket_address);
+
+        socket.on('op_status', function (response) {
+            logClientMessage(operation + " : Status => " + response.status);
+            listOperations();
+        });
+
+        socket.on('connect', function () {
+            logClientMessage("Connected to Peer Server !");
+            socket.emit('operation', { operation: operation, params: operation_params });
+        });
+
+        sockets.put(peerID, socket);
+    }
 }
 
 // NOTE: DHT Peer Server
