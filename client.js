@@ -182,7 +182,7 @@ ioServer.on('connect', function (socket) {
 
     socket.on('operation', function (response) {
         var status = performOperation(response.operation, response.params.key, response.params.value);
-        socket.emit('op_status', { status:  status });
+        socket.emit('op_status', { operation: response.operation, status:  status, timestamp: response.timestamp });
     });
 });
 

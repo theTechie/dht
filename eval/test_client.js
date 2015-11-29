@@ -9,26 +9,30 @@ var inquirer = require('inquirer'),
     ss = require('socket.io-stream'),
     Server = require('socket.io'),
     HashTable = require('hashtable'),
-    hashtable = new HashTable(),
     ConsistentHashing = require('consistent-hashing'),
     constants = require('./constants'),
-    ioServer = new Server();
+    KeyProvider = require('./keyProvider');
 
 var log = true;
 
 var argv = require('optimist')
-    .usage('Usage: $0 -c [CONFIG] -p [PORT] -k [KEY_RANGE]')
-    .demand(['c', 'p'])
+    .usage('Usage: $0 -c [CONFIG] -k [KEY_RANGE]')
+    .demand(['c', 'k', 'i'])
     .alias('c', 'config')
     .describe('c', 'Config file with list of ip and port pair identifying peers')
-    .alias('p', 'port')
-    .describe('p', 'Port to run peer on')
     .alias('k', 'keyRange')
     .describe('k', 'Key Range')
+    .alias('i', 'iterations')
+    .describe('i', 'Num of Iterations')
     .argv;
 
 var peers = validateConfig(argv.config),
     peersList = new ConsistentHashing(peers);
+
+var iteration = 0;
+var totalLatency = 0;
+var maxIteration = argv.iterations;
+var sockets = new HashTable();
 
 // NOTE: Validate config file
 if (!peers) {
@@ -36,133 +40,72 @@ if (!peers) {
     process.exit();
 }
 
-listOperations();
+// NOTE: Prepare Keys
+KeyProvider.init(argv.keyRange, argv.iterations);
 
-// NOTE: List the operations supported by DHT
-function listOperations() {
-    var requestForOperation = [{
-        type: "list",
-        name: "operation",
-        message: "Please select the operation you would like to perform : ",
-        choices: [constants.TEST_PUT, constants.TEST_GET, constants.TEST_DELETE]
-    }];
-
-    inquirer.prompt(requestForOperation, function( response ) {
-        doTest(response.operation);
-    });
-}
+doTest(constants.PUT);
 
 function doTest(operation) {
     switch (operation) {
-        case constants.TEST_PUT:
+        case constants.PUT:
             testPut();
             break;
-        case constants.TEST_GET:
+        case constants.GET:
             testGet();
             break;
-        case constants.TEST_DELETE:
+        case constants.DELETE:
             testDelete();
             break;
         default:
-            logServerMessage("ERROR: SOMETHING WENT TERRIBLY WRONG !");
+            logClientMessage("ERROR: SOMETHING WENT TERRIBLY WRONG !");
     }
 }
 
-var iteration = 0;
-var totalLatency = 0;
-var keyRange = argv.keyRange;
-var maxIteration = 100000;
-
 function testPut() {
     if (iteration < maxIteration) {
-        delegateOperationToPeer(keyRange.toString(), constants.TEST_PUT, { key: keyRange.toString(), value: keyRange.toString() + '_value' });
-        keyRange++; iteration++;
+        delegateOperationToPeer(KeyProvider.getKey(iteration), constants.PUT, { key: KeyProvider.getKey(iteration), value: KeyProvider.getValue(iteration)});
+        iteration++;
     } else {
         console.log("Total Put Latency / Lookup (ms) : ", totalLatency / maxIteration);
-        console.log("Size : ", hashtable.size());
         iteration = 0;
         totalLatency = 0;
-        keyRange = argv.keyRange;
 
-        listOperations();
+        doTest(constants.GET);
     }
 }
 
 function testGet() {
     if (iteration < maxIteration) {
-        delegateOperationToPeer(keyRange.toString(), constants.TEST_GET, { key: keyRange.toString(), value: keyRange.toString() + '_value' });
-        keyRange++; iteration++;
+        delegateOperationToPeer(KeyProvider.getKey(iteration), constants.GET, { key: KeyProvider.getKey(iteration), value: KeyProvider.getValue(iteration)});
+        iteration++;
     } else {
         console.log("Total Get Latency / Lookup (ms) : ", totalLatency / maxIteration);
-        console.log("Size : ", hashtable.size());
 
         iteration = 0;
         totalLatency = 0;
-        keyRange = argv.keyRange;
 
-        listOperations();
+        doTest(constants.DELETE);
     }
 }
 
 function testDelete() {
     if (iteration < maxIteration) {
-        delegateOperationToPeer(keyRange.toString(), constants.TEST_DELETE, { key: keyRange.toString(), value: keyRange.toString() + '_value' });
-        keyRange++; iteration++;
+        delegateOperationToPeer(KeyProvider.getKey(iteration), constants.DELETE, { key: KeyProvider.getKey(iteration), value: KeyProvider.getValue(iteration)});
+        iteration++;
     } else {
         console.log("Total Delete Latency / Lookup (ms) : ", totalLatency / maxIteration);
-        console.log("Size : ", hashtable.size());
 
         iteration = 0;
         totalLatency = 0;
-        keyRange = argv.keyRange;
 
-        listOperations();
+        process.exit();
     }
-}
-
-// NOTE: perform specific operation based on 'operation' using the 'key' and 'value'
-function performOperation(operation, key, value) {
-    var status = constants.NOOP;
-
-    switch (operation) {
-        case constants.TEST_PUT:
-            status = putValue(key, value);
-            break;
-        case constants.TEST_GET:
-            status = getValue(key);
-            break;
-        case constants.TEST_DELETE:
-            status = deleteKey(key);
-            break;
-        default:
-            logServerMessage("ERROR: SOMETHING WENT TERRIBLY WRONG !");
-    }
-
-    logServerMessage(operation + " : Status => " + status);
-
-    return status;
-}
-
-function putValue(key, value) {
-    var status = hashtable.put(key, value);
-    return status ? true : false;
-}
-
-function getValue(key) {
-    var value = hashtable.get(key);
-    return value ? value : null;
-}
-
-function deleteKey(key) {
-    return hashtable.remove(key);
 }
 
 // NOTE: Find target peer using ConsistentHashing
 function findTargetPeer(key) {
     return peersList.getNode(key);
 }
-
-var sockets = new HashTable();
 
 function delegateOperationToPeer(key, operation, operation_params) {
     var socket_address;
@@ -204,18 +147,6 @@ function delegateOperationToPeer(key, operation, operation_params) {
     }
 }
 
-// NOTE: DHT Peer Server
-ioServer.on('connect', function (socket) {
-    logServerMessage("Connected with Peer Client : " + socket.handshake.address);
-
-    console.log("Open Client Connections : ", socket.server.engine.clientsCount);
-
-    socket.on('operation', function (response) {
-        var status = performOperation(response.operation, response.params.key, response.params.value);
-        socket.emit('op_status', { operation: response.operation, status:  status, timestamp: response.timestamp });
-    });
-});
-
 // NOTE: validate the config file for correct peer addresses
 function validateConfig(fileName) {
     var peers = fs.readFileSync(fileName).toString().split('\n');
@@ -248,12 +179,3 @@ function logClientMessage(message) {
     if (log)
         console.log("[Client] : ", message);
 }
-
-// NOTE: log server message
-function logServerMessage(message) {
-    if (log)
-        console.log("[Server] : ", message);
-}
-
-ioServer.listen(argv.port);
-console.log("\n Server running at : " + ip.address() + ":" + argv.port);
