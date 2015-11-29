@@ -151,6 +151,10 @@ function delegateOperationToPeer(key, operation, operation_params) {
 function validateConfig(fileName) {
     var peers = fs.readFileSync(fileName).toString().split('\n');
 
+    peers = peers.filter(function (peer, i){
+        return peer.length > 0;
+    });
+    
     var invalidPeers = peers.filter(function (peer, i) {
         return !validateAddress(peer);
     });
