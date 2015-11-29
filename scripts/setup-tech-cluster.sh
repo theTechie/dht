@@ -29,15 +29,21 @@ done) | tee confs/peers.conf
 
 echo "peers.conf generated !"
 
+(for i in $IP_LIST; do
+	echo $i
+done) | tee hosts.txt
+
+echo "hosts.txt generated !"
+
 # TODO : Use the parallel option -p  for faster copying. How to arrive at the parallelization number ?
 # Copy ZHT binary and configs to remote node $HOME
-for i in $IP_LIST; do
-	echo "connect to $i and copy configs"
-	parallel-scp -H $i -x "-oStrictHostKeyChecking=no -i $PRIVATE_KEY" $HOST_FILE_LOCATION $REMOTE_FILE_LOCATION
-done
+#for i in $IP_LIST; do
+	echo "connect to peers and copy configs"
+	parallel-scp -h hosts.txt -t -1 -x "-oStrictHostKeyChecking=no -i $PRIVATE_KEY" $HOST_FILE_LOCATION $REMOTE_FILE_LOCATION
+#done
 
 # Start ZHT server at remote node
-for i in $IP_LIST; do
-	echo "connect to $i and start dht server"
-        parallel-ssh -H $i -x "-oStrictHostKeyChecking=no -i $PRIVATE_KEY" -i -o server-out -e server-err "./tech-eval/start-server.sh $SERVER_PORT"
-done
+#for i in $IP_LIST; do
+	echo "connect to peers and start dht server"
+  parallel-ssh -h hosts.txt -x "-oStrictHostKeyChecking=no -i $PRIVATE_KEY" -t -1 -i -o server-out -e server-err "./tech-eval/start-server.sh $SERVER_PORT"
+#done

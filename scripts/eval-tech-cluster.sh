@@ -21,14 +21,14 @@ TAG="cs550-cluster-node" # tag assigned to cluster nodes
 
 GET_IP="aws ec2 describe-instances --query "Reservations[*].Instances[*].PrivateIpAddress" --filter Name=instance-state-code,Values=$INSTANCE_STATE_CODE Name=image-id,Values=$AMI_ID Name=tag-value,Values=$TAG --output=text"
 
-IP_LIST=$($GET_IP)
+IP_LIST=($($GET_IP))
 
 #<script> <scale> <iterations>
 
 # Start Evaluation; output output in console and also store in  'output' folder with hostnames
-for (( i=0; i < $1; i++ ))
-do
-	RANGE=$(($(($i+1))*$2));
-	echo "connect to ${IP_LIST[$i]} and start tech DB (dht) evaluation"
-        parallel-ssh -H ${IP_LIST[$i]} -x "-oStrictHostKeyChecking=no -i $PRIVATE_KEY" -i -o output -e error "node tech-eval/eval/test_client -c tech-eval/peers.conf -k $RANGE -i $2"
-done
+#for (( i=0; i<$1; i++ ))
+#do
+	RANGE=10000;
+	echo "connect to peer and start tech DB (dht) evaluation"
+  parallel-ssh -h hosts.txt -x "-oStrictHostKeyChecking=no -i $PRIVATE_KEY" -t -1 -i -o output -e error "node tech-eval/eval/test_client -c tech-eval/peers.conf -k $RANGE -i $2"
+#done
