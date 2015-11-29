@@ -13,7 +13,7 @@ var inquirer = require('inquirer'),
     constants = require('./constants'),
     KeyProvider = require('./keyProvider');
 
-var log = true;
+var log = false;
 
 var argv = require('optimist')
     .usage('Usage: $0 -c [CONFIG] -k [KEY_RANGE]')

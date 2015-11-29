@@ -24,7 +24,8 @@ var argv = require('optimist')
     .argv;
 
 var peers = validateConfig(argv.config),
-    peersList = new ConsistentHashing(peers);
+    peersList = new ConsistentHashing(peers),
+    logEnabled = false;
 
 // NOTE: Validate config file
 if (!peers) {
@@ -220,11 +221,13 @@ function validateAddress(entry) {
 
 // NOTE: log client message
 function logClientMessage(message) {
+  if (logEnabled)
     console.log("[Client] : ", message);
 }
 
 // NOTE: log server message
 function logServerMessage(message) {
+  if (logEnabled)
     console.log("[Server] : ", message);
 }
 
