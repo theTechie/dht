@@ -11,7 +11,7 @@ echo "Fetching Cluster IPs from AWS..."
 #  - copy zht+ binary and configs using pSSH
 #  - start zht+ server on all cluster nodes using pSSH
 
-AMI_ID="ami-a0afbcc1"		# AMI used for cluster node
+AMI_ID="ami-a17765c0"		# AMI used for cluster node
 INSTANCE_STATE_CODE="16"	# 0 (pending), 16 (running), 32 (shutting-down), 48 (terminated), 64 (stopping), 80 (stopped)
 PRIVATE_KEY="$HOME/CS550.pem"		# ssh private-key file
 HOST_FILE_LOCATION="confs/*"	# location of the files to be copied to remote node
