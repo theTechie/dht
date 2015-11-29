@@ -30,5 +30,5 @@ for (( i=0; i < $1; i++ ))
 do
 	RANGE=$(($(($i+1))*$2));
 	echo "connect to ${IP_LIST[$i]} and start tech DB (dht) evaluation"
-        parallel-ssh -H ${IP_LIST[$i]} -x "-oStrictHostKeyChecking=no -i $PRIVATE_KEY" -i -o output -e error "node tech-eval/eval/test_client -c tech-eval/peers.conf -p $SERVER_PORT -k $RANGE -i $2"
+        parallel-ssh -H ${IP_LIST[$i]} -x "-oStrictHostKeyChecking=no -i $PRIVATE_KEY" -i -o output -e error "node tech-eval/eval/test_client -c tech-eval/peers.conf -k $RANGE -i $2"
 done
