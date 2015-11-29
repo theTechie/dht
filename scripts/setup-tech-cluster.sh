@@ -39,5 +39,5 @@ done
 # Start ZHT server at remote node
 for i in $IP_LIST; do
 	echo "connect to $i and start dht server"
-        parallel-ssh -H $i -x "-oStrictHostKeyChecking=no -i $PRIVATE_KEY" "nohup node tech-eval/client -c tech-eval/peers.conf -p $SERVER_PORT > server-log.out 2> server-log.err < /dev/null &"
+        parallel-ssh -H $i -x "-oStrictHostKeyChecking=no -i $PRIVATE_KEY" "nohup ./start-server $SERVER_PORT > server-log.out 2> server-log.err < /dev/null &"
 done
