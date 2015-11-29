@@ -32,70 +32,71 @@ if (!peers) {
     process.exit();
 }
 
-listOperations();
-
-// NOTE: List the operations supported by DHT
-function listOperations() {
-    var requestForOperation = [{
-        type: "list",
-        name: "operation",
-        message: "Please select the operation you would like to perform : ",
-        choices: [constants.PUT, constants.GET, constants.DELETE]
-    }];
-
-    inquirer.prompt(requestForOperation, function( response ) {
-        requestKey(response.operation);
-    });
-}
-
-// NOTE: request for 'key' to be used
-function requestKey(operation) {
-    var requestForKey = [{
-        type: "input",
-        name: "key",
-        message: "Please enter the key : ",
-        validate: function (input) {
-            if (input === undefined || input === '' || input.trim() === '') {
-                console.log("Please enter proper key !");
-                return false;
-            } else {
-                return true;
-            }
-        }
-    }];
-
-    inquirer.prompt(requestForKey, function( response ) {
-        // NOTE: Only PUT operation requires 'value'; GET and DELETE requires only the 'key'
-        if (operation === constants.PUT) {
-            requestValue(operation, response.key);
-        } else {
-            delegateOperationToPeer(response.key, operation, { key: response.key, value: response.value });
-            //listOperations();
-        }
-    });
-}
-
-// NOTE: request for 'value' to be stored (for PUT)
-function requestValue(operation, key) {
-    var requestForValue = [{
-        type: "input",
-        name: "value",
-        message: "Please enter the value : ",
-        validate: function (input) {
-            if (input === undefined || input === '' || input.trim() === '') {
-                console.log("Please enter proper value !");
-                return false;
-            } else {
-                return true;
-            }
-        }
-    }];
-
-    inquirer.prompt(requestForValue, function( response ) {
-        delegateOperationToPeer(key, operation, { key: key, value: response.value });
-        //listOperations();
-    });
-}
+//
+// listOperations();
+//
+// // NOTE: List the operations supported by DHT
+// function listOperations() {
+//     var requestForOperation = [{
+//         type: "list",
+//         name: "operation",
+//         message: "Please select the operation you would like to perform : ",
+//         choices: [constants.PUT, constants.GET, constants.DELETE]
+//     }];
+//
+//     inquirer.prompt(requestForOperation, function( response ) {
+//         requestKey(response.operation);
+//     });
+// }
+//
+// // NOTE: request for 'key' to be used
+// function requestKey(operation) {
+//     var requestForKey = [{
+//         type: "input",
+//         name: "key",
+//         message: "Please enter the key : ",
+//         validate: function (input) {
+//             if (input === undefined || input === '' || input.trim() === '') {
+//                 console.log("Please enter proper key !");
+//                 return false;
+//             } else {
+//                 return true;
+//             }
+//         }
+//     }];
+//
+//     inquirer.prompt(requestForKey, function( response ) {
+//         // NOTE: Only PUT operation requires 'value'; GET and DELETE requires only the 'key'
+//         if (operation === constants.PUT) {
+//             requestValue(operation, response.key);
+//         } else {
+//             delegateOperationToPeer(response.key, operation, { key: response.key, value: response.value });
+//             //listOperations();
+//         }
+//     });
+// }
+//
+// // NOTE: request for 'value' to be stored (for PUT)
+// function requestValue(operation, key) {
+//     var requestForValue = [{
+//         type: "input",
+//         name: "value",
+//         message: "Please enter the value : ",
+//         validate: function (input) {
+//             if (input === undefined || input === '' || input.trim() === '') {
+//                 console.log("Please enter proper value !");
+//                 return false;
+//             } else {
+//                 return true;
+//             }
+//         }
+//     }];
+//
+//     inquirer.prompt(requestForValue, function( response ) {
+//         delegateOperationToPeer(key, operation, { key: key, value: response.value });
+//         //listOperations();
+//     });
+// }
 
 // NOTE: perform specific operation based on 'operation' using the 'key' and 'value'
 function performOperation(operation, key, value) {
@@ -135,46 +136,46 @@ function deleteKey(key) {
 }
 
 // NOTE: Find target peer using ConsistentHashing
-function findTargetPeer(key) {
-    return peersList.getNode(key);
-}
+// function findTargetPeer(key) {
+//     return peersList.getNode(key);
+// }
 
 var sockets = new HashTable();
 
-function delegateOperationToPeer(key, operation, operation_params) {
-    var socket_address;
-    var peerID = findTargetPeer(key);
-
-    if (validateAddress(peerID)) {
-        socket_address = "http://" + peerID.split(" ").join(":");
-    } else {
-        logClientMessage("ERROR : SOMETHING TERRIBLY WENT WRONG WHILE CONNECTING TO PEER !");
-        process.exit();
-    }
-
-    var socket;
-
-    // NOTE: Check if the socket is already established and re-use if yes, else create a new connection
-    if (sockets.has(peerID)) {
-        socket = sockets.get(peerID);
-        socket.emit('operation', { operation: operation, params: operation_params });
-    } else {
-        socket = io(socket_address);
-        console.log("Connecting to peer : ", socket_address);
-
-        socket.on('op_status', function (response) {
-            logClientMessage(operation + " : Status => " + response.status);
-            listOperations();
-        });
-
-        socket.on('connect', function () {
-            logClientMessage("Connected to Peer Server !");
-            socket.emit('operation', { operation: operation, params: operation_params });
-        });
-
-        sockets.put(peerID, socket);
-    }
-}
+// function delegateOperationToPeer(key, operation, operation_params) {
+//     var socket_address;
+//     var peerID = findTargetPeer(key);
+//
+//     if (validateAddress(peerID)) {
+//         socket_address = "http://" + peerID.split(" ").join(":");
+//     } else {
+//         logClientMessage("ERROR : SOMETHING TERRIBLY WENT WRONG WHILE CONNECTING TO PEER !");
+//         process.exit();
+//     }
+//
+//     var socket;
+//
+//     // NOTE: Check if the socket is already established and re-use if yes, else create a new connection
+//     if (sockets.has(peerID)) {
+//         socket = sockets.get(peerID);
+//         socket.emit('operation', { operation: operation, params: operation_params });
+//     } else {
+//         socket = io(socket_address);
+//         console.log("Connecting to peer : ", socket_address);
+//
+//         socket.on('op_status', function (response) {
+//             logClientMessage(operation + " : Status => " + response.status);
+//             listOperations();
+//         });
+//
+//         socket.on('connect', function () {
+//             logClientMessage("Connected to Peer Server !");
+//             socket.emit('operation', { operation: operation, params: operation_params });
+//         });
+//
+//         sockets.put(peerID, socket);
+//     }
+// }
 
 // NOTE: DHT Peer Server
 ioServer.on('connect', function (socket) {
