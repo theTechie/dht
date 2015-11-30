@@ -11,7 +11,7 @@ echo "Fetching Cluster IPs from AWS..."
 #  - copy zht+ binary and configs using pSSH
 #  - start zht+ server on all cluster nodes using pSSH
 
-AMI_ID="ami-50706231"		# AMI used for cluster node
+AMI_ID="ami-xxxxxxx"		# AMI used for cluster node
 INSTANCE_STATE_CODE="16"	# 0 (pending), 16 (running), 32 (shutting-down), 48 (terminated), 64 (stopping), 80 (stopped)
 PRIVATE_KEY="$HOME/CS550.pem"		# ssh private-key file
 HOST_FILE_LOCATION="confs/*"	# location of the files to be copied to remote node
@@ -23,12 +23,9 @@ GET_IP="aws ec2 describe-instances --query "Reservations[*].Instances[*].Private
 
 IP_LIST=($($GET_IP))
 
-#<script> <scale> <iterations>
+#<script> <iterations>
 
 # Start Evaluation; output output in console and also store in  'output' folder with hostnames
-#for (( i=0; i<$1; i++ ))
-#do
-	RANGE=10000;
-	echo "connect to peer and start tech DB (dht) evaluation"
-  parallel-ssh -h hosts.txt -x "-oStrictHostKeyChecking=no -i $PRIVATE_KEY" -t -1 -i -o output -e error "node tech-eval/eval/test_client -c tech-eval/peers.conf -k $RANGE -i $2"
-#done
+RANGE=10000;
+echo "connect to peer and start tech DB (dht) evaluation"
+parallel-ssh -h hosts.txt -x "-oStrictHostKeyChecking=no -i $PRIVATE_KEY" -t -1 -i -o output -e error "node tech-eval/eval/test_client -c tech-eval/peers.conf -k $RANGE -i $1"
